@@ -5,15 +5,7 @@ import matplotlib.pyplot as plt
 from pyvis.network import Network
 import re
 
-
-def draw_dag_and_save(dag, filename):
-    A = nx.nx_agraph.to_agraph(dag)
-    G = nx.DiGraph(A)
-    layout = nx.drawing.nx_agraph.graphviz_layout(G, prog="dot")
-
-    nx.draw(dag, pos=layout, with_labels=True, arrows=True, node_color="skyblue")  # type: ignore
-    plt.margins(0.20)
-    plt.savefig(filename)
+from node import Node
 
 
 def draw_dag_interactive(dag, outfile):
@@ -80,22 +72,26 @@ def generate_dag(root_path, uri):
 
     graph = nx.DiGraph()
 
-    with open(uri) as f:
+    with open(uri, mode="r") as f:
         lines = f.read().split("\n")
         for symbol in internal_symbols:
-            graph.add_node(symbol["name"])
+            v = Node(name=symbol["name"], uri=uri)
+            print(v)
+            graph.add_node(str(v))
             symbol_text = fetch_range(lines, symbol["location"]["range"])
             for token in re.split(r"[ \(\)\+\-\*\/\=,:]", symbol_text):
                 if token in symbols:
-                    graph.add_edge(token, symbol["name"])
-                    print(
-                        symbol["name"]
-                        + " depends on "
-                        + token
-                        + " from "
-                        + symbols[symbol["name"]]["symbol"]["location"]["uri"]
+                    u = Node(
+                        name=token, uri=symbols[token]["symbol"]["location"]["uri"]
                     )
-
+                    graph.add_edge(str(u), str(v))
+                    # print(
+                    #     symbol["name"]
+                    #     + " depends on "
+                    #     + token
+                    #     + " from "
+                    #     + symbols[token]["symbol"]["location"]["uri"]
+                    # )
     return graph
 
 
@@ -107,5 +103,6 @@ if __name__ == "__main__":
 
     graph = generate_dag(root_path=root_path, uri=uri)
 
+
     # TODO: generate a graph that incorporates all the source files in the project.
-    draw_dag_and_save(graph, "graph.png")
+    draw_dag_interactive(graph, "graph.html")
