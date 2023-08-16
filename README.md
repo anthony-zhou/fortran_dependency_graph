@@ -32,4 +32,27 @@ The reason we care about specific dependencies from a module (and not just that 
 
 I'm looking at the Fortran `stdlib` library on GitHub and it's changing my mind. Much of the library is written using `fypp`, a preprocessor for Fortran. I have a feeling that even `fortls` would do a bad job of determining interdependencies with a custom build setup like this. Any kind of preprocessing, honestly, seems to suffer from this kind of problem. Then again, we could probably run some `fypp` program to preprocess things as needed -- same goes from `gcc` preprocessing. Is this better than using a full language model structure (using embeddings to retrieve relevant chunks of the codebase?). For now I will assume so, until someone proves otherwise. My hunch is that language models will simply fail more often, as they fail to discover all the relevant modules for a translation. 
 
-So to conclude, I think that we should proceed as originally planned and determine the dependencies for every function. Worst case, we will have developed a nice tool for visualizing modules in Fortran. Best case, we will have developed a solid foundation to approach generalized translation tasks in all languages, thanks to the universal nature of LSP. # fortran_dependency_graph
+So to conclude, I think that we should proceed as originally planned and determine the dependencies for every function. Worst case, we will have developed a nice tool for visualizing modules in Fortran. Best case, we will have developed a solid foundation to approach generalized translation tasks in all languages, thanks to the universal nature of LSP. 
+
+## Features
+
+Generate a DAG from a fortran project, with a node for each symbol and an arrow for each reference. The DAG is color-coded by module. 
+
+Since this uses LSP, a similar approach can be applied quite directly to [any language supporting LSP](https://langserver.org/).
+
+## Coming up
+
+- Isolate the dependencies for a single symbol (e.g., a module)
+- Output source code given such a set of dependencies (needed for ChatGPT code generation usage)
+
+## Limitations
+
+This implementation is less than ideal. 
+
+1. `fortls` notably doesn't have a good parser implemented yet (https://github.com/fortran-lang/fortls/issues/85). Once they integrate the LFortran parser this should be solved.
+2. `fortls` doesn't know about your build process, such as when you pull in modules from other folders. For example, on the fortran-utils example, the DAG doesn't recognize that the test files depend on the module files -- `fortls` can't find the modules from the test files. 
+
+A better approach might be to go directly to the AST from LFortran. This has the advantage of correctly finding all symbols in the Fortran, and the disadvantage of not having a "go to definition" option. This would solve (1) but not (2).
+
+But I also think (2) could just be an implementation error, not a fundamental limitation of `fortls`. By solving (1) and (2) -- which might only take a few days of work -- we should have a pretty complete solution to this problem. 
+

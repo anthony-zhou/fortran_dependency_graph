@@ -50,6 +50,7 @@ def assemble_symbol_table(root_path: str, uri: str, module_sources):
                 root_path=root_path, uri=module_source["definition"]["uri"]
             )
             # FOR NOW: assume only one module is defined in each file.
+            # TODO: Note that this won't work for rename statements. https://github.com/fortran-lang/fortls/issues/52
 
             if len(module_source["only"]) > 0:
                 for symbol in module_symbols:
@@ -105,6 +106,8 @@ def add_module_to_dag(graph: nx.DiGraph, root_path: str, uri: str):
             v = Node(name=symbol["name"], uri=uri)
             graph.add_node(str(v))
             symbol_text = fetch_range(lines, symbol["location"]["range"])
+            # Note that this tokenization is naive -- will result in false positives if a name is in a string e.g. some_str = "func(x)"
+            # Could look into using a semanticTokens API call to LSP, if that exists. Or use LFortran for this. 
             for token in re.split(r"[ \(\)\+\-\*\/\=,:]", symbol_text):
                 if token in symbols:
                     uri = symbols[token]["symbol"]["location"]["uri"]
