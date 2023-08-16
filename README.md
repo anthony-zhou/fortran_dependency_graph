@@ -50,7 +50,7 @@ Since this uses LSP, a similar approach can be applied quite directly to [any la
 This implementation is less than ideal. 
 
 1. `fortls` notably doesn't have a good parser implemented yet (https://github.com/fortran-lang/fortls/issues/85). Once they integrate the LFortran parser this should be solved.
-2. `fortls` doesn't know about your build process, such as when you pull in modules from other folders. For example, on the fortran-utils example, the DAG doesn't recognize that the test files depend on the module files -- `fortls` can't find the modules from the test files. 
+2. `fortls` doesn't know about your build process, such as when you pull in modules from other folders. For example, on the `fortran-utils` example, the DAG doesn't recognize that the test files depend on the module files -- `fortls` can't find the modules from the test files. 
 
 A better approach might be to go directly to the AST from LFortran. This has the advantage of correctly finding all symbols in the Fortran, and the disadvantage of not having a "go to definition" option. This would solve (1) but not (2).
 
