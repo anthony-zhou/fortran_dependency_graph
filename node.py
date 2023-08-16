@@ -6,7 +6,8 @@ class Node:
         self.name = name
         self.uri = uri
 
-    def from_string(self, nameuri: str):
+    @staticmethod
+    def from_string(nameuri: str):
         return Node(*nameuri.split("|"))
 
     def __str__(self):
