@@ -40,6 +40,12 @@ Generate a DAG from a fortran project, with a node for each symbol and an arrow 
 
 Since this uses LSP, a similar approach can be applied quite directly to [any language supporting LSP](https://langserver.org/).
 
+## Running the code
+
+First install the dependencies. Then run the code:
+
+`python dag.py`
+
 ## Coming up
 
 - Isolate the dependencies for a single symbol (e.g., a module)
@@ -56,3 +62,12 @@ A better approach might be to go directly to the AST from LFortran. This has the
 
 But I also think (2) could just be an implementation error, not a fundamental limitation of `fortls`. By solving (1) and (2) -- which might only take a few days of work -- we should have a pretty complete solution to this problem. 
 
+## Credits
+
+Samples are drawn from across GitHub:
+
+- https://github.com/modern-fortran/tcp-client-server
+- https://github.com/astrofrog/fortranlib
+- https://github.com/certik/fortran-utils
+
+This work builds upon the work of `fortls` and `fortran-language-server`, as well as the creation of the LSP standard. 
