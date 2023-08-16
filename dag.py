@@ -6,6 +6,7 @@ from pyvis.network import Network
 import re
 import webbrowser
 import os
+from tqdm import tqdm
 
 from node import Node
 
@@ -48,11 +49,14 @@ def assemble_symbol_table(root_path: str, uri: str, module_sources):
             module_symbols = lsp.get_document_symbols(
                 root_path=root_path, uri=module_source["definition"]["uri"]
             )
+            # FOR NOW: assume only one module is defined in each file.
+
             if len(module_source["only"]) > 0:
                 for symbol in module_symbols:
                     if (
-                        symbol["name"] in module_source["only"]
-                        and symbol["containerName"] == module_source["name"]
+                        symbol["name"]
+                        in module_source["only"]
+                        # and symbol["containerName"] == module_source["name"]
                     ):
                         symbols[symbol["name"]] = {
                             "symbol": symbol,
@@ -60,11 +64,11 @@ def assemble_symbol_table(root_path: str, uri: str, module_sources):
                         }
             else:
                 for symbol in module_symbols:
-                    if symbol["containerName"] == module_source["name"]:
-                        symbols[symbol["name"]] = {
-                            "symbol": symbol,
-                            "source": module_source["name"],
-                        }
+                    # if symbol["containerName"] == module_source["name"]:
+                    symbols[symbol["name"]] = {
+                        "symbol": symbol,
+                        "source": module_source["name"],
+                    }
 
     internal_symbols = lsp.get_document_symbols(root_path=root_path, uri=uri)
     for symbol in internal_symbols:
@@ -112,24 +116,32 @@ def add_module_to_dag(graph: nx.DiGraph, root_path: str, uri: str):
 
 
 if __name__ == "__main__":
-    root_path = (
-        "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source"
-    )
-    uri = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source/mod_dill.f90"
+    # root_path = (
+    #     "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source"
+    # )
+    # root_path = (
+    #     "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/fortranlib"
+    # )
+    root_path = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/samples/fortran-utils"
 
     graph = nx.DiGraph()
-    graph = add_module_to_dag(graph, root_path=root_path, uri=uri)
-    graph = add_module_to_dag(
-        graph,
-        root_path,
-        "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source/client.f90",
-    )
-    graph = add_module_to_dag(
-        graph,
-        root_path,
-        "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source/server.f90",
-    )
-    # TODO: generate a graph that incorporates all the source files in the project.
-    draw_dag_interactive(graph, "output/graph.html")
 
-    webbrowser.open_new_tab("file:///" + os.getcwd() + "/output/graph.html")
+    # First, let's see how many
+    count = 0
+    for root, _, files in os.walk(root_path):
+        count += sum(1 for file in files if file.endswith(".f90"))
+
+    # Find all files and link them up.
+    with tqdm(total=count, desc="Processing .f90 files") as pbar:
+        for root, dirs, files in os.walk(root_path):
+            for uri in files:
+                if uri.endswith(".f90"):
+                    print(uri)
+                    graph = add_module_to_dag(
+                        graph, root_path=root_path, uri=root + "/" + uri
+                    )
+                    pbar.update(1)
+
+    draw_dag_interactive(graph, "output/graph_utils.html")
+
+    webbrowser.open_new_tab("file:///" + os.getcwd() + "/output/graph_utils.html")
