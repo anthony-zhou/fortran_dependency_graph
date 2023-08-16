@@ -7,6 +7,7 @@ import re
 import webbrowser
 import os
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor
 
 from node import Node
 
@@ -95,56 +96,71 @@ def fetch_range(lines: list[str], symbol_range):
     return symbol_text
 
 
-def add_module_to_dag(graph: nx.DiGraph, root_path: str, uri: str):
+def add_module_to_dag(root_path: str, uri: str):
     module_sources = modules.get_module_sources(root_path, uri)
     internal_symbols = lsp.get_document_symbols(root_path=root_path, uri=uri)
     symbols = assemble_symbol_table(root_path, uri, module_sources)
+
+    modifications = []
 
     with open(uri, mode="r") as f:
         lines = f.read().split("\n")
         for symbol in internal_symbols:
             v = Node(name=symbol["name"], uri=uri)
-            graph.add_node(str(v))
+            modifications.append(("add_node", str(v)))
+
             symbol_text = fetch_range(lines, symbol["location"]["range"])
             # Note that this tokenization is naive -- will result in false positives if a name is in a string e.g. some_str = "func(x)"
-            # Could look into using a semanticTokens API call to LSP, if that exists. Or use LFortran for this. 
+            # Could look into using a semanticTokens API call to LSP, if that exists. Or use LFortran for this.
             for token in re.split(r"[ \(\)\+\-\*\/\=,:]", symbol_text):
                 if token in symbols:
                     uri = symbols[token]["symbol"]["location"]["uri"]
                     if uri.startswith("file://"):
                         uri = uri[7:]
                     u = Node(name=token, uri=uri)
-                    graph.add_edge(str(u), str(v))
-    return graph
+                    modifications.append(("add_edge", (str(u), str(v))))
+
+    return modifications
 
 
 if __name__ == "__main__":
     # root_path = (
-    #     "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source"
-    # )
-    # root_path = (
     #     "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/fortranlib"
     # )
-    root_path = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/samples/fortran-utils"
+    # root_path = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/samples/fortran-utils"
+    root_path = "/Users/anthony/Documents/GitHub/ESCOMP/CTSM"
+    # root_path = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/samples/tcp-client-server"
 
     graph = nx.DiGraph()
 
     # First, let's see how many
-    count = 0
+    file_paths = []
     for root, _, files in os.walk(root_path):
-        count += sum(1 for file in files if file.endswith(".f90"))
+        file_paths.extend(
+            os.path.join(root, file) for file in files if file.endswith(".f90")
+        )
 
-    # Find all files and link them up.
-    with tqdm(total=count, desc="Processing .f90 files") as pbar:
-        for root, dirs, files in os.walk(root_path):
-            for uri in files:
-                if uri.endswith(".f90"):
-                    print(uri)
-                    graph = add_module_to_dag(
-                        graph, root_path=root_path, uri=root + "/" + uri
-                    )
-                    pbar.update(1)
+    # Define a function to update the progress bar
+    def update_progress(future):
+        pbar.update(1)
 
-    draw_dag_interactive(graph, "output/graph_utils.html")
+    # Process the .f90 files in parallel and apply the given function, with a progress bar
+    with tqdm(total=len(file_paths), desc="Processing .f90 files") as pbar:
+        with ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(add_module_to_dag, root_path, file_path)
+                for file_path in file_paths
+            ]
+            for future in futures:
+                future.add_done_callback(update_progress)
+            for future in futures:
+                modifications = future.result()
+                for action, params in modifications:
+                    if action == "add_node":
+                        graph.add_node(params)
+                    elif action == "add_edge":
+                        graph.add_edge(*params)
 
-    webbrowser.open_new_tab("file:///" + os.getcwd() + "/output/graph_utils.html")
+    draw_dag_interactive(graph, "output/graph_CTSM.html")
+
+    webbrowser.open_new_tab("file:///" + os.getcwd() + "/output/graph_CTSM.html")
