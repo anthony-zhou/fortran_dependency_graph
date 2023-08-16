@@ -73,12 +73,7 @@ def fetch_range(lines: list[str], symbol_range):
     return symbol_text
 
 
-if __name__ == "__main__":
-    root_path = (
-        "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source"
-    )
-    uri = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source/client.f90"
-
+def generate_dag(root_path, uri):
     module_sources = modules.get_module_sources(root_path, uri)
     internal_symbols = lsp.get_document_symbols(root_path=root_path, uri=uri)
     symbols = assemble_symbol_table(root_path, uri, module_sources)
@@ -92,7 +87,7 @@ if __name__ == "__main__":
             symbol_text = fetch_range(lines, symbol["location"]["range"])
             for token in re.split(r"[ \(\)\+\-\*\/\=,:]", symbol_text):
                 if token in symbols:
-                    graph.add_edge(symbol["name"], token)
+                    graph.add_edge(token, symbol["name"])
                     print(
                         symbol["name"]
                         + " depends on "
@@ -101,7 +96,16 @@ if __name__ == "__main__":
                         + symbols[symbol["name"]]["symbol"]["location"]["uri"]
                     )
 
-    # Print the graph
-    print(graph)
+    return graph
 
+
+if __name__ == "__main__":
+    root_path = (
+        "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source"
+    )
+    uri = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/source/client.f90"
+
+    graph = generate_dag(root_path=root_path, uri=uri)
+
+    # TODO: generate a graph that incorporates all the source files in the project.
     draw_dag_and_save(graph, "graph.png")
