@@ -1,5 +1,10 @@
 This is a utility that, given a Fortran project, computes a dependency graph.
 
+
+![Dependency Graph from ESCOMP/CTSM](screenshots/ctsm_graph_screenshot.png)
+
+Interactive demos:
+[https://anthonyzhou.com/demos/fortran_dependency_graphs](https://anthonyzhou.com/demos/fortran_dependency_graphs)
 ## How it works
 
 First we find a list of all files in the project. Then, for each file, we do the following:
