@@ -1,7 +1,7 @@
 This is a utility that, given a Fortran project, computes a dependency graph. For example:
 
 
-![Dependency Graph from ESCOMP/CTSM](screenshots/ctsm_graph_screenshot.png | width = 250)
+<img src="screenshots/ctsm_graph_screenshot.png" alt="Dependency Graph from ESCOMP/CTSM" width ="300"/>
 
 Interactive demos:
 [https://anthonyzhou.com/demos/fortran_dependency_graphs](https://anthonyzhou.com/demos/fortran_dependency_graphs)
